@@ -1,13 +1,20 @@
-import connectDB from './config/db.js';
-import app from './app.js';
+import dotenv from "dotenv";
+dotenv.config();
 
-connectDB().then(()=>{
+import connectDB from "./config/db.js";
+import app from "./app.js";
 
-  app.listen(process.env.PORT, ()=>{
-    console.log(`Server is running on port ${process.env.PORT}`);
+const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB Atlas connectify database then start HTTP server
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`[Connectify] Server is running on port ${PORT}`);
+      console.log(`[Connectify] Base API URL: http://localhost:${PORT}/api/v1`);
+    });
   })
-
-}).catch((error)=>{
-  console.error(`Error: ${error.message}`);
-  process.exit(1);
-})
+  .catch((error) => {
+    console.error(`[Connectify] Startup Failed: ${error.message}`);
+    process.exit(1);
+  });
