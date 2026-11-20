@@ -1,15 +1,8 @@
 class apiResponse {
-  /**
-   * Flexible API Response formatter
-   * Handles:
-   *  - new apiResponse(200, "User logged in", userData)
-   *  - new apiResponse(200, userData, "User logged in")
-   *  - new apiResponse(200, "Success")
-   */
   constructor(statusCode, arg2 = "Success", arg3 = null) {
     this.statusCode = statusCode;
     this.success = statusCode >= 200 && statusCode < 400;
-    this.sucess = this.success; // backward compatibility for typo
+    this.sucess = this.success;
 
     if (typeof arg2 === "string") {
       this.message = arg2;

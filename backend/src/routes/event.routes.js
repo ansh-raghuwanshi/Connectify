@@ -10,14 +10,11 @@ import { requireRole } from "../middleware/role.middleware.js";
 
 const router = Router();
 
-// Public event discovery
 router.route("/").get(getEvents);
 router.route("/:id").get(getEventById);
 
-// Protected routes
 router.use(verifyJwt);
 
-// Create event allowed for teachers, alumni, and admins
 router
   .route("/")
   .post(requireRole("teacher", "alumni", "admin"), createEvent);

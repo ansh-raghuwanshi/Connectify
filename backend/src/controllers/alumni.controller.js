@@ -3,9 +3,11 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-/**
- * Format user document to match frontend alumni interface
- */
+const escapeRegex = (str) => {
+  if (typeof str !== "string") return "";
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
 const formatAlumniRecord = (user) => ({
   id: user._id.toString(),
   user: {
@@ -27,9 +29,6 @@ const formatAlumniRecord = (user) => ({
   createdAt: user.createdAt,
 });
 
-/**
- * Get all alumni with advanced search, filtering, and pagination
- */
 const getAlumni = asyncHandler(async (req, res) => {
   const {
     search,
@@ -49,15 +48,13 @@ const getAlumni = asyncHandler(async (req, res) => {
   const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
   const skip = (pageNum - 1) * limitNum;
 
-  // Query alumni users
   const filter = {
     role: "alumni",
     isActive: true,
   };
 
-  // Search by keyword across name, company, skills, or job title
   if (search && search.trim()) {
-    const searchRegex = new RegExp(search.trim(), "i");
+    const searchRegex = new RegExp(escapeRegex(search.trim()), "i");
     filter.$or = [
       { name: searchRegex },
       { currentCompany: searchRegex },
@@ -68,11 +65,11 @@ const getAlumni = asyncHandler(async (req, res) => {
   }
 
   if (branch) {
-    filter.branch = new RegExp(`^${branch.trim()}$`, "i");
+    filter.branch = new RegExp(`^${escapeRegex(branch.trim())}$`, "i");
   }
 
   if (department) {
-    filter.department = new RegExp(`^${department.trim()}$`, "i");
+    filter.department = new RegExp(`^${escapeRegex(department.trim())}$`, "i");
   }
 
   const targetYear = passingYear || passoutYear;
@@ -82,18 +79,18 @@ const getAlumni = asyncHandler(async (req, res) => {
 
   const targetCompany = company || currentCompany;
   if (targetCompany) {
-    filter.currentCompany = new RegExp(targetCompany.trim(), "i");
+    filter.currentCompany = new RegExp(escapeRegex(targetCompany.trim()), "i");
   }
 
   if (location) {
-    filter.location = new RegExp(location.trim(), "i");
+    filter.location = new RegExp(escapeRegex(location.trim()), "i");
   }
 
   if (skills) {
     const skillList = Array.isArray(skills)
       ? skills
       : skills.split(",").map((s) => s.trim());
-    filter.skills = { $in: skillList.map((s) => new RegExp(`^${s}$`, "i")) };
+    filter.skills = { $in: skillList.map((s) => new RegExp(`^${escapeRegex(s)}$`, "i")) };
   }
 
   const [total, alumniUsers] = await Promise.all([
@@ -121,9 +118,6 @@ const getAlumni = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Get alumni by ID
- */
 const getAlumniById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -142,9 +136,6 @@ const getAlumniById = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, "Alumni retrieved successfully", formatAlumniRecord(user)));
 });
 
-/**
- * Update current logged-in alumni profile
- */
 const updateAlumniProfile = asyncHandler(async (req, res) => {
   const {
     currentCompany,

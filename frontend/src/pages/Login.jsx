@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { resendVerificationEmail } from '../services/auth.service'
+import { Icon } from '../components/common/Icons'
 
-function Login() {
+export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const from = location.state?.from?.pathname || '/home'
@@ -18,7 +19,6 @@ function Login() {
   const [error, setError] = useState('')
   const [isUnverified, setIsUnverified] = useState(false)
   const [resendStatus, setResendStatus] = useState('')
-  const [directVerifyUrl, setDirectVerifyUrl] = useState('')
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -29,7 +29,6 @@ function Login() {
     setError('')
     setIsUnverified(false)
     setResendStatus('')
-    setDirectVerifyUrl('')
     setLoading(true)
 
     try {
@@ -51,100 +50,181 @@ function Login() {
   const handleResend = async () => {
     if (!formData.email) return
     try {
-      const res = await resendVerificationEmail(formData.email)
+      await resendVerificationEmail(formData.email)
       setResendStatus('Verification link re-sent! Please check your email inbox (and Spam/Junk folder).')
-      if (res?.data?.verificationUrl) {
-        setDirectVerifyUrl(res.data.verificationUrl)
-      }
     } catch (err) {
       setResendStatus(err.message || 'Failed to resend verification email.')
     }
   }
 
   return (
-    <div style={{ maxWidth: '440px', margin: '60px auto', padding: '32px', background: '#ffffff', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '6px', fontSize: '24px' }}>Sign in to Connectify</h2>
-      <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 0, marginBottom: '24px', fontSize: '14px' }}>
-        Welcome back to your college networking community
-      </p>
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '32px 20px',
+        background: 'var(--bg-page)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: '20%',
+          left: '30%',
+          width: '500px',
+          height: '500px',
+          background: 'radial-gradient(circle, var(--primary-glow) 0%, transparent 70%)',
+          filter: 'blur(80px)',
+          pointerEvents: 'none',
+        }}
+      />
 
-      {error && (
-        <div style={{ backgroundColor: 'var(--danger-light)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '14px' }}>
-          {error}
-          {isUnverified && (
-            <div style={{ marginTop: '8px' }}>
-              <button
-                type="button"
-                onClick={handleResend}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '14px', fontWeight: 600 }}
-              >
-                Click here to resend verification link
-              </button>
+      <div
+        className="card"
+        style={{
+          maxWidth: '460px',
+          width: '100%',
+          padding: '40px 36px',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '24px',
+          boxShadow: 'var(--shadow-xl)',
+          position: 'relative',
+          zIndex: 10,
+          margin: 0,
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              fontFamily: 'var(--font-heading)',
+              fontSize: '22px',
+              fontWeight: 800,
+              color: 'var(--text-main)',
+              textDecoration: 'none',
+              marginBottom: '16px',
+            }}
+          >
+            <div className="navbar-brand-icon">
+              <Icon name="users" size={20} color="#ffffff" />
             </div>
-          )}
-        </div>
-      )}
-
-      {resendStatus && (
-        <div style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary-dark)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '13px' }}>
-          {resendStatus}
-        </div>
-      )}
-
-      {directVerifyUrl && (
-        <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', padding: '14px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', textAlign: 'center' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary-dark)', marginBottom: '6px' }}>
-            ⚡ Instant Verification Link:
-          </div>
-          <a href={directVerifyUrl} className="btn btn-primary btn-sm" style={{ display: 'inline-block', width: '100%' }}>
-            Click Here to Verify Account Now
-          </a>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label className="form-label">Email Address</label>
-          <input
-            type="email"
-            name="email"
-            className="input"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            placeholder="e.g. yourname@college.edu"
-          />
-        </div>
-
-        <div className="form-group" style={{ marginBottom: '24px' }}>
-          <label className="form-label">Password</label>
-          <input
-            type="password"
-            name="password"
-            className="input"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn btn-primary"
-          style={{ width: '100%', padding: '12px', fontSize: '15px' }}
-        >
-          {loading ? 'Signing in...' : 'Sign In'}
-        </button>
-
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--text-muted)' }}>
-          Don't have an account yet?{' '}
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-            Create an account
+            <span>
+              Connect<span style={{ color: 'var(--primary)' }}>ify</span>
+            </span>
           </Link>
-        </p>
-      </form>
+          <h2 style={{ margin: '0 0 6px', fontSize: '24px', fontWeight: 800, color: 'var(--text-main)' }}>
+            Welcome Back
+          </h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
+            Sign in to your college alumni & student network
+          </p>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              backgroundColor: 'var(--danger-light)',
+              border: '1px solid var(--danger-border)',
+              color: 'var(--danger)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '20px',
+              fontSize: '14px',
+            }}
+          >
+            {error}
+            {isUnverified && (
+              <div style={{ marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary)',
+                    textDecoration: 'underline',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  Click here to resend verification link
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {resendStatus && (
+          <div
+            style={{
+              backgroundColor: 'var(--primary-light)',
+              border: '1px solid #c7d2fe',
+              color: 'var(--primary-hover)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '20px',
+              fontSize: '13px',
+            }}
+          >
+            {resendStatus}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              className="input"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              placeholder="e.g. rahul@college.edu"
+            />
+          </div>
+
+          <div className="form-group" style={{ marginBottom: '24px' }}>
+            <label className="form-label">Password</label>
+            <input
+              type="password"
+              name="password"
+              className="input"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-lg"
+            style={{ width: '100%', padding: '13px', fontSize: '15px' }}
+          >
+            {loading ? 'Signing In...' : 'Sign In'}
+          </button>
+
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: 'var(--text-muted)' }}>
+            Don't have an account yet?{' '}
+            <Link to="/register" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+              Join Connectify Free
+            </Link>
+          </p>
+        </form>
+      </div>
     </div>
   )
 }

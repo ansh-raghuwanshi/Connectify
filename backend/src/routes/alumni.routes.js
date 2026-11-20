@@ -9,11 +9,9 @@ import { requireAlumni } from "../middleware/role.middleware.js";
 
 const router = Router();
 
-// Public discovery endpoints
 router.route("/").get(getAlumni);
 router.route("/:id").get(getAlumniById);
 
-// Protected alumni profile update
 router.route("/profile").put(verifyJwt, requireAlumni, updateAlumniProfile);
 
 export default router;

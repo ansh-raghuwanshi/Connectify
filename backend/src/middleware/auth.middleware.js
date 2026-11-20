@@ -2,9 +2,6 @@ import { User } from "../model/user.model.js";
 import jwt from "jsonwebtoken";
 import apiError from "../utils/apiError.js";
 
-/**
- * Authentication Middleware: Validates JWT Access Token
- */
 const verifyJwt = async (req, res, next) => {
   try {
     const authHeader = req.headers?.authorization;

@@ -4,7 +4,6 @@ import verifyJwt from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// Authenticated AI Gateway proxy routes
 router.use(verifyJwt);
 
 router.route("/query").post(queryAiService);

@@ -1,11 +1,44 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { summarizeProfile } from '../services/ai.service'
+import { Icon } from '../components/common/Icons'
+import { Badge } from '../components/common/Badge'
 
 function Profile() {
   const { user, updateUser } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
+
+  const [aiDossier, setAiDossier] = useState(null)
+  const [analyzingProfile, setAnalyzingProfile] = useState(false)
+  const [bioAppliedToast, setBioAppliedToast] = useState(false)
+
+  const handleGenerateAiReview = async () => {
+    setAnalyzingProfile(true)
+    try {
+      const res = await summarizeProfile(user?._id)
+      if (res?.data) {
+        setAiDossier(res.data)
+      }
+    } catch (err) {
+      alert(err.message || 'Could not analyze profile')
+    } finally {
+      setAnalyzingProfile(false)
+    }
+  }
+
+  const handleApplyAiSummaryToBio = async () => {
+    if (!aiDossier?.summary) return
+    try {
+      await updateUser({ bio: aiDossier.summary })
+      setFormData((prev) => ({ ...prev, bio: aiDossier.summary }))
+      setBioAppliedToast(true)
+      setTimeout(() => setBioAppliedToast(false), 3000)
+    } catch (err) {
+      alert(err.message || 'Failed to update bio')
+    }
+  }
 
   const [formData, setFormData] = useState({
     name: '',
@@ -78,7 +111,6 @@ function Profile() {
 
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      {/* Profile Header Card */}
       <div className="card" style={{ padding: '28px', marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
@@ -118,7 +150,6 @@ function Profile() {
         )}
       </div>
 
-      {/* Profile Details or Edit Form */}
       {isEditing ? (
         <form onSubmit={handleSave} className="card" style={{ padding: '24px' }}>
           <h3 style={{ margin: '0 0 20px', fontSize: '18px' }}>Edit Professional Details</h3>
@@ -276,7 +307,6 @@ function Profile() {
         </form>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Bio Section */}
           <div className="card">
             <h4 className="card-title">About Me</h4>
             <p style={{ color: user?.bio ? 'var(--text-main)' : 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
@@ -284,7 +314,149 @@ function Profile() {
             </p>
           </div>
 
-          {/* Academic & Professional Information */}
+          <div
+            className="card"
+            style={{
+              padding: '24px',
+              border: '1px solid var(--primary-border)',
+              background: 'linear-gradient(180deg, var(--primary-light) 0%, var(--bg-card) 60%)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    background: 'var(--primary)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Icon name="sparkles" size={16} color="#ffffff" />
+                </div>
+                <div>
+                  <h4 className="card-title" style={{ margin: 0, fontSize: '17px' }}>
+                    Connectify AI Profile Intelligence
+                  </h4>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Executive profile synthesis, technical clustering, and networking optimization
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGenerateAiReview}
+                disabled={analyzingProfile}
+                className="btn btn-primary btn-sm"
+                style={{ gap: '6px' }}
+              >
+                <Icon name="sparkles" size={14} color="#ffffff" />
+                <span>{analyzingProfile ? 'Synthesizing...' : '⚡ Generate AI Profile Review'}</span>
+              </button>
+            </div>
+
+            {bioAppliedToast && (
+              <div
+                style={{
+                  background: 'var(--success-light)',
+                  border: '1px solid var(--success-border)',
+                  color: 'var(--success)',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  marginBottom: '14px',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Icon name="check" size={15} color="var(--success)" />
+                <span>AI Executive Summary successfully applied to your profile bio!</span>
+              </div>
+            )}
+
+            {aiDossier ? (
+              <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                    Executive Headline
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {aiDossier.headline}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                    Executive Summary Narrative
+                  </div>
+                  <div style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                    {aiDossier.executiveSummary || aiDossier.summary}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                    gap: '14px',
+                    marginBottom: '18px',
+                  }}
+                >
+                  {aiDossier.strengths?.length > 0 && (
+                    <div style={{ background: 'var(--success-light)', border: '1px solid var(--success-border)', borderRadius: '10px', padding: '14px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--success)', marginBottom: '6px' }}>
+                        🌟 Profile Highlights & Strengths
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                        {aiDossier.strengths.map((s, idx) => (
+                          <li key={idx}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {aiDossier.suggestions?.length > 0 && (
+                    <div style={{ background: 'var(--warning-light)', border: '1px solid var(--warning-border)', borderRadius: '10px', padding: '14px' }}>
+                      <div style={{ fontWeight: 700, fontSize: '12px', color: 'var(--warning)', marginBottom: '6px' }}>
+                        💡 Recommendations to Attract More Connections
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                        {aiDossier.suggestions.map((g, idx) => (
+                          <li key={idx}>{g}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleApplyAiSummaryToBio}
+                    className="btn btn-secondary btn-sm"
+                    style={{ gap: '6px' }}
+                    title="Copy this executive narrative into your profile About Me bio"
+                  >
+                    <Icon name="check" size={14} />
+                    <span>Apply Executive Summary to My Bio</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Click <strong>"Generate AI Profile Review"</strong> to generate a comprehensive executive summary of your background, analyze your skill competency clusters, and receive actionable tips to optimize your profile for mentorship and career opportunities.
+              </p>
+            )}
+          </div>
+
           <div className="card">
             <h4 className="card-title">Academic & Professional Background</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
@@ -307,7 +479,6 @@ function Profile() {
             </div>
           </div>
 
-          {/* Skills Section */}
           <div className="card">
             <h4 className="card-title">Skills & Technologies</h4>
             {user?.skills && user.skills.length > 0 ? (

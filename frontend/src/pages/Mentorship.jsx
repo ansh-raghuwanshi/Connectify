@@ -6,16 +6,21 @@ import {
   requestMentorship,
 } from '../services/mentorship.service'
 import { getAlumni } from '../services/alumni.service'
+import { Icon } from '../components/common/Icons'
+import { Avatar } from '../components/common/Avatar'
+import { Badge } from '../components/common/Badge'
+import { Card3D } from '../components/common/Card3D'
+import { Modal } from '../components/common/Modal'
+import { EmptyState } from '../components/common/EmptyState'
 
-function Mentorship() {
+export function Mentorship() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState('requests') // 'requests' | 'browse'
+  const [activeTab, setActiveTab] = useState('requests')
   const [requests, setRequests] = useState([])
   const [mentors, setMentors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Request modal state for browsing mentors
   const [selectedMentor, setSelectedMentor] = useState(null)
   const [topic, setTopic] = useState('Career Guidance')
   const [message, setMessage] = useState('')
@@ -76,7 +81,7 @@ function Mentorship() {
     setSuccessMsg('')
     try {
       await requestMentorship(selectedMentor.id, topic, message.trim())
-      setSuccessMsg('Mentorship request sent successfully!')
+      setSuccessMsg('Mentorship request submitted successfully!')
       setTimeout(() => {
         setSelectedMentor(null)
         setMessage('')
@@ -91,103 +96,193 @@ function Mentorship() {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ margin: '0 0 6px', fontSize: '26px' }}>Mentorship Hub</h2>
-        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '14px' }}>
-          Connect with experienced graduates for career guidance, mock interviews, and resume reviews.
+    <div style={{ maxWidth: '980px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 800 }}>Mentorship Hub</h2>
+          <Badge variant="blue" size="sm">
+            1-on-1 Guidance
+          </Badge>
+        </div>
+        <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '14px' }}>
+          Connect with experienced graduates for resume reviews, mock interviews, and career navigation
         </p>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          marginBottom: '28px',
+          borderBottom: '1px solid var(--border)',
+          paddingBottom: '14px',
+        }}
+      >
         <button
           onClick={() => setActiveTab('requests')}
           className={`btn btn-sm ${activeTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ borderRadius: '9999px', padding: '8px 18px', gap: '8px' }}
         >
-          {user?.role === 'alumni' ? 'Incoming Requests' : 'My Mentorship Requests'} ({requests.length})
+          <Icon name="handshake" size={15} />
+          <span>
+            {user?.role === 'alumni' ? 'Incoming Mentorship Requests' : 'My Mentorship Requests'}
+          </span>
+          <span
+            style={{
+              background: activeTab === 'requests' ? 'rgba(255, 255, 255, 0.25)' : 'var(--slate-200)',
+              color: activeTab === 'requests' ? '#ffffff' : 'var(--text-main)',
+              padding: '2px 7px',
+              borderRadius: '9999px',
+              fontSize: '11px',
+              fontWeight: 700,
+            }}
+          >
+            {requests.length}
+          </span>
         </button>
+
         <button
           onClick={() => setActiveTab('browse')}
           className={`btn btn-sm ${activeTab === 'browse' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ borderRadius: '9999px', padding: '8px 18px', gap: '8px' }}
         >
-          Find Available Mentors
+          <Icon name="users" size={15} />
+          <span>Browse Available Mentors</span>
         </button>
       </div>
 
       {error && (
-        <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px' }}>
+        <div
+          style={{
+            background: 'var(--danger-light)',
+            border: '1px solid var(--danger-border)',
+            color: 'var(--danger)',
+            padding: '14px 18px',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '20px',
+            fontSize: '14px',
+          }}
+        >
           {error}
         </div>
       )}
 
-      {/* TAB 1: Requests View */}
       {activeTab === 'requests' && (
         <div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              Loading requests...
+            <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+              Loading mentorship records...
             </div>
           ) : requests.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '36px', marginBottom: '12px' }}>🤝</div>
-              <h3>No mentorship requests</h3>
-              <p>
-                {user?.role === 'alumni'
-                  ? 'No students have requested mentorship from you yet. Ensure "Available for Mentorship" is turned on in your profile!'
-                  : "You haven't requested mentorship yet. Switch to 'Find Available Mentors' to get started!"}
-              </p>
-            </div>
+            <EmptyState
+              title={user?.role === 'alumni' ? 'No Incoming Mentorship Requests' : 'No Mentorship Requests Yet'}
+              message={
+                user?.role === 'alumni'
+                  ? 'No students have requested mentorship from you yet. Ensure "Available for Mentorship" is toggled on in your profile!'
+                  : "You haven't requested mentorship from an alumnus yet. Switch to 'Browse Available Mentors' to find experienced graduates."
+              }
+              onReset={() => setActiveTab('browse')}
+              suggestions={['Resume Review', 'Career Guidance', 'Mock Interview', 'System Design']}
+            />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {requests.map((req) => {
                 const isAlumni = user?.role === 'alumni'
                 const partner = isAlumni ? req.student : req.alumni
+                const status = req.status || 'pending'
 
                 return (
-                  <div key={req._id} className="card" style={{ padding: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <div className="avatar avatar-md">
-                          {partner?.name ? partner.name.charAt(0).toUpperCase() : 'U'}
-                        </div>
+                  <div
+                    key={req._id}
+                    className="card"
+                    style={{
+                      padding: '24px',
+                      borderLeft: `4px solid ${
+                        status === 'accepted'
+                          ? 'var(--success)'
+                          : status === 'rejected'
+                          ? 'var(--danger)'
+                          : 'var(--warning)'
+                      }`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '16px',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                        <Avatar name={partner?.name || 'User'} src={partner?.profilePicture} size="md" />
                         <div>
-                          <div style={{ fontWeight: 600, fontSize: '16px' }}>
+                          <div style={{ fontWeight: 700, fontSize: '16px', color: 'var(--text-main)' }}>
                             {isAlumni ? `Student: ${partner?.name}` : `Mentor: ${partner?.name}`}
                           </div>
-                          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                            {partner?.currentCompany ? `${partner.jobTitle || 'Role'} at ${partner.currentCompany}` : `${partner?.branch || 'Student'}`}
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {partner?.currentCompany ? (
+                              <span style={{ color: 'var(--primary)', fontWeight: 500 }}>
+                                {partner.jobTitle || 'Role'} at {partner.currentCompany}
+                              </span>
+                            ) : (
+                              <span>{partner?.branch || 'University Member'}</span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      <div>
-                        <span
-                          className={`badge ${
-                            req.status === 'accepted'
-                              ? 'badge-green'
-                              : req.status === 'rejected'
-                              ? 'badge-gray'
-                              : 'badge-yellow'
-                          }`}
-                        >
-                          Status: {req.status}
-                        </span>
-                      </div>
+                      <Badge
+                        variant={
+                          status === 'accepted' ? 'green' : status === 'rejected' ? 'red' : 'yellow'
+                        }
+                        size="md"
+                      >
+                        {status === 'accepted' && '✓ '}
+                        {status.toUpperCase()}
+                      </Badge>
                     </div>
 
-                    <div style={{ background: 'var(--bg-page)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)', marginBottom: '4px' }}>
-                        Topic: {req.topic}
+                    <div
+                      style={{
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        padding: '16px 20px',
+                        borderRadius: 'var(--radius-md)',
+                        marginBottom: '18px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          color: 'var(--primary)',
+                          marginBottom: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Icon name="tag" size={14} />
+                        <span>Topic: {req.topic}</span>
                       </div>
-                      <div style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                      <div style={{ fontSize: '14px', color: 'var(--slate-700)', lineHeight: 1.6, fontStyle: 'italic' }}>
                         "{req.message}"
                       </div>
                     </div>
 
-                    {/* Alumni Accept / Reject Buttons */}
-                    {isAlumni && req.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    {isAlumni && status === 'pending' && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '10px',
+                          justifyContent: 'flex-end',
+                          borderTop: '1px solid var(--border)',
+                          paddingTop: '16px',
+                        }}
+                      >
                         <button
                           onClick={() => handleStatusUpdate(req._id, 'rejected')}
                           className="btn btn-secondary btn-sm"
@@ -197,8 +292,10 @@ function Mentorship() {
                         <button
                           onClick={() => handleStatusUpdate(req._id, 'accepted')}
                           className="btn btn-primary btn-sm"
+                          style={{ background: 'var(--success)', borderColor: 'var(--success)', gap: '6px' }}
                         >
-                          ✓ Accept Mentorship
+                          <Icon name="check" size={14} />
+                          <span>Accept Request</span>
                         </button>
                       </div>
                     )}
@@ -210,43 +307,66 @@ function Mentorship() {
         </div>
       )}
 
-      {/* TAB 2: Browse Mentors View */}
       {activeTab === 'browse' && (
         <div>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-              Finding available mentors...
+            <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+              Finding available mentors in the alumni directory...
             </div>
           ) : mentors.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-              <h3>No mentors listed right now</h3>
-              <p>Check back soon as more graduates opt-in for mentorship!</p>
-            </div>
+            <EmptyState
+              title="No Available Mentors Found"
+              message="No alumni have currently opted in for new student mentorship requests. Check back soon as more graduates join!"
+              suggestions={['Explore Directory', 'Campus Events', 'Connectify AI']}
+            />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '24px',
+              }}
+            >
               {mentors.map((mentor) => (
-                <div key={mentor.id} className="card" style={{ padding: '20px', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '14px' }}>
-                    <div className="avatar avatar-md">
-                      {mentor.user?.name ? mentor.user.name.charAt(0).toUpperCase() : 'M'}
-                    </div>
+                <Card3D
+                  key={mentor.id}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    boxShadow: 'var(--shadow-sm)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '16px' }}>
+                    <Avatar name={mentor.user?.name || 'Mentor'} src={mentor.user?.profilePicture} size="md" online={true} />
                     <div>
-                      <h4 style={{ margin: 0, fontSize: '16px' }}>{mentor.user?.name}</h4>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-main)' }}>
+                        {mentor.user?.name}
+                      </h4>
+                      <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 600, marginTop: '2px' }}>
                         {mentor.jobTitle || 'Alumni'} {mentor.currentCompany ? `@ ${mentor.currentCompany}` : ''}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '14px', flex: 1 }}>
-                    <div><strong>Branch:</strong> {mentor.branch || mentor.degree}</div>
-                    <div><strong>Class of:</strong> {mentor.passingYear || 'N/A'}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div>
+                      <strong style={{ color: 'var(--text-main)' }}>Branch:</strong> {mentor.branch || mentor.degree || 'Engineering'}
+                    </div>
+                    <div>
+                      <strong style={{ color: 'var(--text-main)' }}>Class of:</strong> {mentor.passingYear || 'N/A'}
+                    </div>
                   </div>
 
                   {mentor.skills && mentor.skills.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '18px' }}>
                       {mentor.skills.slice(0, 3).map((s, idx) => (
-                        <span key={idx} className="badge badge-blue">{s}</span>
+                        <span key={idx} className="c-badge c-badge-blue c-badge-sm">
+                          {s}
+                        </span>
                       ))}
                     </div>
                   )}
@@ -254,80 +374,92 @@ function Mentorship() {
                   <button
                     onClick={() => setSelectedMentor(mentor)}
                     className="btn btn-primary btn-sm"
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', gap: '6px' }}
                   >
-                    🤝 Request Mentorship
+                    <Icon name="handshake" size={14} />
+                    <span>Request Mentorship</span>
                   </button>
-                </div>
+                </Card3D>
               ))}
             </div>
           )}
         </div>
       )}
 
-      {/* Request Mentorship Modal */}
-      {selectedMentor && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3 style={{ margin: '0 0 8px' }}>Request Mentorship</h3>
-            <p style={{ margin: '0 0 16px', fontSize: '14px', color: 'var(--text-muted)' }}>
-              Send a guidance request to <strong>{selectedMentor.user?.name}</strong> (
-              {selectedMentor.jobTitle || 'Alumni'} @ {selectedMentor.currentCompany || 'N/A'})
-            </p>
-
-            {successMsg ? (
-              <div style={{ background: 'var(--success-light)', color: 'var(--success)', padding: '16px', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                {successMsg}
-              </div>
-            ) : (
-              <form onSubmit={handleSendRequest}>
-                <div className="form-group">
-                  <label className="form-label">Topic</label>
-                  <select
-                    className="select"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                  >
-                    <option value="Career Guidance">Career Guidance</option>
-                    <option value="Resume Review">Resume & Portfolio Review</option>
-                    <option value="Technical Interview Prep">Technical Interview Prep</option>
-                    <option value="Industry Transition">Industry Transition</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Note to Mentor</label>
-                  <textarea
-                    className="textarea"
-                    rows="4"
-                    required
-                    placeholder="Briefly describe your goals and what you would like advice on..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                  />
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMentor(null)}
-                    className="btn btn-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting || !message.trim()}
-                    className="btn btn-primary"
-                  >
-                    {submitting ? 'Sending...' : 'Send Request'}
-                  </button>
-                </div>
-              </form>
-            )}
+      <Modal
+        isOpen={Boolean(selectedMentor)}
+        onClose={() => setSelectedMentor(null)}
+        title="Request Mentorship"
+        subtitle={
+          selectedMentor
+            ? `Send a guidance request to ${selectedMentor.user?.name} (${selectedMentor.jobTitle || 'Alumni'} @ ${selectedMentor.currentCompany || 'Industry'})`
+            : ''
+        }
+      >
+        {successMsg ? (
+          <div
+            style={{
+              background: 'var(--success-light)',
+              border: '1px solid var(--success-border)',
+              color: 'var(--success)',
+              padding: '20px',
+              borderRadius: 'var(--radius-md)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎉</div>
+            <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '4px' }}>
+              Request Sent!
+            </div>
+            <div style={{ fontSize: '13px' }}>{successMsg}</div>
           </div>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleSendRequest}>
+            <div className="form-group">
+              <label className="form-label">Mentorship Topic</label>
+              <select
+                className="select"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+              >
+                <option value="Career Guidance">Career Guidance</option>
+                <option value="Resume Review">Resume & Portfolio Review</option>
+                <option value="Technical Interview Prep">Technical Interview Prep</option>
+                <option value="Industry Transition">Industry Transition</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Note to Mentor</label>
+              <textarea
+                className="textarea"
+                rows="4"
+                required
+                placeholder="Briefly describe your goals, academic background, and what advice you would appreciate..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedMentor(null)}
+                className="btn btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || !message.trim()}
+                className="btn btn-primary"
+              >
+                {submitting ? 'Submitting...' : 'Send Request'}
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   )
 }

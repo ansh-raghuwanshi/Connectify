@@ -10,7 +10,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware for Node.js backend integration
+                                                 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -52,7 +52,7 @@ class ProfileSummaryRequest(BaseModel):
     skills: List[str] = []
     bio: Optional[str] = ""
 
-# Common technology skills catalog for entity extraction
+                                                        
 KNOWN_SKILLS = [
     "react", "node.js", "nodejs", "python", "javascript", "typescript",
     "java", "c++", "golang", "go", "rust", "aws", "docker", "kubernetes",
@@ -62,7 +62,7 @@ KNOWN_SKILLS = [
     "cybersecurity", "ui/ux", "figma", "nlp", "computer vision"
 ]
 
-# Common companies catalog
+                          
 KNOWN_COMPANIES = [
     "google", "microsoft", "amazon", "apple", "meta", "netflix",
     "uber", "adobe", "salesforce", "oracle", "cisco", "intel",
@@ -71,7 +71,7 @@ KNOWN_COMPANIES = [
     "jpmorgan", "morgan stanley"
 ]
 
-# Common branches catalog
+                         
 BRANCH_MAP = {
     "computer science": "Computer Science",
     "cse": "Computer Science",
@@ -91,23 +91,27 @@ def extract_search_filters(text: str) -> FilterSchema:
     lower_text = text.lower()
     filters = FilterSchema()
 
-    # 1. Extract skills
+                       
     found_skills = []
     for skill in KNOWN_SKILLS:
-        # Match whole word or exact skill phrase
-        pattern = r'\b' + re.escape(skill) + r'\b'
+                                                       
+        escaped_skill = re.escape(skill)
+        if any(c in skill for c in "+.#"):
+            pattern = r'(?:^|[^a-zA-Z0-9])' + escaped_skill + r'(?:$|[^a-zA-Z0-9])'
+        else:
+            pattern = r'\b' + escaped_skill + r'\b'
         if re.search(pattern, lower_text):
             found_skills.append(skill.title() if len(skill) > 3 else skill.upper())
     filters.skills = list(set(found_skills))
 
-    # 2. Extract company
+                        
     for comp in KNOWN_COMPANIES:
         pattern = r'\b' + re.escape(comp) + r'\b'
         if re.search(pattern, lower_text):
             filters.company = comp.title()
             break
 
-    # Look for "at <Company>" or "in <Company>" if not in known list
+                                                                    
     if not filters.company:
         comp_match = re.search(r'\b(?:at|for|joined|working in)\s+([A-Z][a-zA-Z0-9&]+)', text)
         if comp_match:
@@ -115,19 +119,19 @@ def extract_search_filters(text: str) -> FilterSchema:
             if candidate.lower() not in ["the", "a", "an", "my", "our"]:
                 filters.company = candidate
 
-    # 3. Extract branch / major
+                               
     for key, formal_name in BRANCH_MAP.items():
         pattern = r'\b' + re.escape(key) + r'\b'
         if re.search(pattern, lower_text):
             filters.branch = formal_name
             break
 
-    # 4. Extract graduation / passing year (e.g. 2020, 2021, 2022, 2023, 2024, 2025, 2026)
+                                                                                          
     year_match = re.search(r'\b(20[1-2][0-9])\b', text)
     if year_match:
         filters.passingYear = year_match.group(1)
 
-    # 5. Extract job role
+                         
     role_patterns = [
         (r'\b(?:software engineer|sde|developer)\b', "Software Engineer"),
         (r'\b(?:frontend|front-end)\b', "Frontend Engineer"),
@@ -143,7 +147,7 @@ def extract_search_filters(text: str) -> FilterSchema:
             filters.jobTitle = role_title
             break
 
-    # 6. Mentorship intent
+                          
     if re.search(r'\b(?:mentor|mentorship|guidance|guide me|advice)\b', lower_text):
         filters.mentorshipOnly = True
 
@@ -169,7 +173,7 @@ def handle_ai_query(req: QueryRequest):
 
     lower = query_text.lower()
 
-    # Check for platform guidance / FAQ intent
+                                              
     if any(phrase in lower for phrase in ["how to", "how do i", "what is connectify", "where is", "help me use"]):
         explanation = (
             "Connectify is your college's official alumni networking hub. You can discover alumni "
@@ -189,10 +193,10 @@ def handle_ai_query(req: QueryRequest):
             ]
         )
 
-    # Extract structured filters for alumni discovery
+                                                     
     filters = extract_search_filters(query_text)
 
-    # Build clear natural language explanation of extracted filters
+                                                                   
     criteria_parts = []
     if filters.company:
         criteria_parts.append(f"working at {filters.company}")
@@ -226,25 +230,65 @@ def handle_ai_query(req: QueryRequest):
 
 @app.post("/api/v1/summarize-profile")
 def summarize_profile(req: ProfileSummaryRequest):
-    skills_str = ", ".join(req.skills) if req.skills else "general expertise"
-    career_str = f"{req.jobTitle} at {req.currentCompany}" if req.currentCompany else (req.jobTitle or "Professional")
-    education_str = f"{req.degree or 'Graduate'} in {req.branch or 'Engineering'}" if req.branch else "Graduate"
-    if req.passoutYear:
-        education_str += f" (Class of {req.passoutYear})"
+    name = req.name or "Professional"
+    company = req.currentCompany or ""
+    title = req.jobTitle or ("Student" if req.role == "student" else "Technology Professional")
+    degree = req.degree or "B.Tech"
+    branch = req.branch or "Engineering"
+    year = req.passoutYear or ""
+    skills = req.skills or []
+    bio = req.bio or ""
 
-    summary = (
-        f"{req.name} is a {career_str} with a background as a {education_str}. "
-        f"Specializes in {skills_str}. "
+    headline = f"{title} at {company} | {degree} in {branch}" if company else f"{title} | {branch}"
+
+    paragraphs = []
+    if company and title:
+        paragraphs.append(
+            f"{name} is an experienced {title} at {company}. A proud graduate with a {degree} in {branch}"
+            f"{f' (Class of {year})' if year else ''}, {name} brings solid technical rigor and real-world engineering problem-solving to high-scale industry environments."
+        )
+    else:
+        paragraphs.append(
+            f"{name} is an active engineering {req.role} specializing in {branch} ({degree}"
+            f"{f', Class of {year}' if year else ''}), focused on modern software architectures and emerging technologies."
+        )
+
+    if skills:
+        paragraphs.append(
+            f"Key technical competencies include {', '.join(skills)}. {name} excels at building scalable applications, modern component libraries, and robust service architectures."
+        )
+
+    if bio:
+        paragraphs.append(f"Personal profile statement: \"{bio}\"")
+
+    outreach_template = (
+        f"Hi {name},\n\n"
+        f"I noticed your journey from our college's {branch} department to {company or 'the industry'}.\n"
+        f"As a fellow engineering scholar, I'd love to ask a quick question about your experiences when you have a moment.\n\n"
+        f"Thank you!"
     )
-    if req.bio:
-        summary += f"Profile note: \"{req.bio}\""
 
     return {
         "success": True,
-        "name": req.name,
-        "summary": summary
+        "name": name,
+        "headline": headline,
+        "summary": " ".join(paragraphs),
+        "executiveSummary": "\n\n".join(paragraphs),
+        "mentorshipFocus": [
+            f"Hiring lifecycle and interview prep for {company or 'tech firms'}",
+            "Technical architecture and production software practices",
+            "Resume reviews and transition from college to industry"
+        ],
+        "tailoredOutreach": outreach_template,
+        "strengths": [
+            f"Proven domain background in {branch}",
+            f"{len(skills)} verified technical skills" if skills else "Active academic involvement"
+        ]
     }
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=False)
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    uvicorn.run("main:app", host=host, port=port, reload=False)

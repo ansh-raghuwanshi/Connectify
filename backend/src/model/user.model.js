@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     enrollmentNumber: {
       type: String,
       trim: true,
-      sparse: true, // Allows null/undefined for teacher or admin without uniqueness conflicts
+      sparse: true,
     },
     password: {
       type: String,
@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     profilePicture: {
+      type: String,
+      default: "",
+    },
+    coverPicture: {
       type: String,
       default: "",
     },
@@ -132,17 +136,12 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Secondary Indexes (Note: email and enrollmentNumber already have indexes declared on their fields)
 userSchema.index({ role: 1 });
 userSchema.index({ currentCompany: 1 });
 userSchema.index({ branch: 1 });
 userSchema.index({ passoutYear: 1 });
 userSchema.index({ skills: 1 });
 
-/**
- * Pre-save password hashing hook
- * Mongoose async hooks return a Promise (no next parameter required)
- */
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
     return;
@@ -150,17 +149,11 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-/**
- * Compare plain text password with hashed password
- */
 userSchema.methods.isPasswordCorrect = async function (password) {
   if (!this.password) return false;
   return await bcrypt.compare(password, this.password);
 };
 
-/**
- * Generate Access Token (JWT)
- */
 userSchema.methods.generateAccessToken = function () {
   const secret = process.env.ACCESS_TOKEN_SECRET || process.env.AccessTokenSecret || "connectify_access_secret";
   const expiry = process.env.ACCESS_TOKEN_EXPIRY || "15m";
@@ -177,9 +170,6 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-/**
- * Generate Refresh Token (JWT)
- */
 userSchema.methods.generateRefreshToken = function () {
   const secret = process.env.REFRESH_TOKEN_SECRET || process.env.RefreshTokenSecret || "connectify_refresh_secret";
   const expiry = process.env.REFRESH_TOKEN_EXPIRY || "7d";
@@ -194,9 +184,6 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-/**
- * Generate secure SHA-256 hashed verification token with 24-hour expiry
- */
 userSchema.methods.generateEmailVerificationToken = function () {
   const unhashedToken = crypto.randomBytes(32).toString("hex");
 
@@ -205,14 +192,11 @@ userSchema.methods.generateEmailVerificationToken = function () {
     .update(unhashedToken)
     .digest("hex");
 
-  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  this.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   return unhashedToken;
 };
 
-/**
- * Generate secure SHA-256 hashed password reset token with 1-hour expiry
- */
 userSchema.methods.generatePasswordResetToken = function () {
   const unhashedToken = crypto.randomBytes(32).toString("hex");
 
@@ -221,7 +205,7 @@ userSchema.methods.generatePasswordResetToken = function () {
     .update(unhashedToken)
     .digest("hex");
 
-  this.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  this.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
 
   return unhashedToken;
 };

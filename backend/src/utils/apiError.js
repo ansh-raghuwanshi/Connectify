@@ -8,10 +8,10 @@ class apiError extends Error {
     super(message);
     this.statusCode = statusCode;
     this.success = false;
-    this.sucess = false; // backward compatibility
+    this.sucess = false;
     this.message = message;
     this.errors = Array.isArray(errors) ? errors : [errors];
-    this.error = this.errors; // backward compatibility
+    this.error = this.errors;
     this.data = null;
 
     if (stack) {

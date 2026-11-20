@@ -1,13 +1,5 @@
 import { BrevoClient } from "@getbrevo/brevo";
 
-/**
- * Brevo Transactional Email Service
- * Sends emails using Brevo API over HTTPS (port 443), which works reliably in all environments.
- * 
- * Note on Brevo credentials:
- * - Brevo REST API requires an API key starting with 'xkeysib-' (from Brevo Dashboard > SMTP & API > API Keys).
- * - Brevo SMTP credentials starting with 'xsmtpsib-' are relay passwords meant for SMTP host smtp-relay.brevo.com.
- */
 const sendEmail = async ({ to, subject, html, text }) => {
   const apiKey = process.env.BREVO_API_KEY;
   const senderEmail = process.env.EMAIL_USER;
@@ -22,7 +14,6 @@ const sendEmail = async ({ to, subject, html, text }) => {
     throw new Error("Email service is not configured: BREVO_API_KEY missing");
   }
 
-  // Diagnostic warning for SMTP vs API key mismatch
   if (apiKey.startsWith("xsmtpsib-")) {
     console.warn(
       "[Email Service] Notice: Your BREVO_API_KEY starts with 'xsmtpsib-'. " +
@@ -44,7 +35,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     const sendPayload = {
       subject,
       htmlContent: html,
-      textContent: text || html.replace(/<[^>]*>?/gm, ""), // Fallback plain text strips HTML
+      textContent: text || html.replace(/<[^>]*>?/gm, ""),
       sender: {
         name: senderName,
         email: senderEmail,
@@ -67,20 +58,17 @@ const sendEmail = async ({ to, subject, html, text }) => {
       recipient: to,
     };
   } catch (error) {
-    // Extract sanitized error message
     const errorDetails = error?.body?.message || error?.message || "Unknown email error";
     const statusCode = error?.status || error?.statusCode || 500;
 
     console.error(`[Email Service] Delivery failed to ${to} [Status ${statusCode}]: ${errorDetails}`);
 
-    // If sender identity is unverified in Brevo
     if (typeof errorDetails === "string" && errorDetails.toLowerCase().includes("sender")) {
       console.error(
         `[Email Service] Sender verification error: '${senderEmail}' must be verified in Brevo Dashboard > Senders & IP > Senders.`
       );
     }
 
-    // Re-throw structured error for caller handling
     const emailErr = new Error(`Email sending failed: ${errorDetails}`);
     emailErr.statusCode = statusCode;
     emailErr.details = errorDetails;

@@ -17,7 +17,7 @@ async function request(endpoint, options = {}) {
   let data
   try {
     data = await response.json()
-  } catch (err) {
+  } catch {
     if (!response.ok) {
       throw new Error(`Server returned status ${response.status}`)
     }

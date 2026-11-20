@@ -1,8 +1,5 @@
 import apiError from "../utils/apiError.js";
 
-/**
- * Role-Based Access Control (RBAC) Middleware
- */
 const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -53,7 +50,7 @@ export {
   requireRole,
   requireAdmin,
   requireAlumni,
-  requireAlumni as requireAlumini, // backward-compatibility alias
+  requireAlumni as requireAlumini,
   requireTeacher,
   requireStudent,
 };

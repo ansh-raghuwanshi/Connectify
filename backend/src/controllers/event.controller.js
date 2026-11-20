@@ -3,9 +3,6 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-/**
- * Create a new event (Teacher, Alumni, or Admin)
- */
 const createEvent = asyncHandler(async (req, res) => {
   const { title, description, date, location, eventLink, bannerUrl, capacity, category } =
     req.body;
@@ -36,9 +33,6 @@ const createEvent = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, "Event created successfully", populatedEvent));
 });
 
-/**
- * Get all events with filtering and pagination
- */
 const getEvents = asyncHandler(async (req, res) => {
   const { category, upcoming, page = 1, limit = 10 } = req.query;
 
@@ -83,9 +77,6 @@ const getEvents = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Get event by ID
- */
 const getEventById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -107,9 +98,6 @@ const getEventById = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, "Event retrieved successfully", eventObj));
 });
 
-/**
- * Register / RSVP for an event
- */
 const registerForEvent = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
@@ -124,7 +112,6 @@ const registerForEvent = asyncHandler(async (req, res) => {
   );
 
   if (isAlreadyRegistered) {
-    // Unregister
     event.attendees = event.attendees.filter(
       (attId) => attId.toString() !== userId.toString()
     );
@@ -137,7 +124,6 @@ const registerForEvent = asyncHandler(async (req, res) => {
     );
   }
 
-  // Check capacity
   if (event.attendees.length >= event.capacity) {
     throw new apiError(400, "Event capacity has been reached");
   }

@@ -4,9 +4,6 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-/**
- * Submit mentorship request (Students)
- */
 const requestMentorship = asyncHandler(async (req, res) => {
   const { alumniId, topic, message } = req.body;
   const studentId = req.user._id;
@@ -24,7 +21,6 @@ const requestMentorship = asyncHandler(async (req, res) => {
     throw new apiError(404, "Alumni mentor not found or inactive");
   }
 
-  // Prevent duplicate pending requests
   const existingPending = await Mentorship.findOne({
     student: studentId,
     alumni: alumniId,
@@ -51,9 +47,6 @@ const requestMentorship = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, "Mentorship request submitted successfully", populated));
 });
 
-/**
- * Get mentorship requests for the current user
- */
 const getMyMentorshipRequests = asyncHandler(async (req, res) => {
   const userId = req.user._id;
   const role = req.user.role;
@@ -70,9 +63,6 @@ const getMyMentorshipRequests = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, "Mentorship requests retrieved successfully", requests));
 });
 
-/**
- * Update mentorship status (Accept/Reject by Alumni)
- */
 const updateMentorshipStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, responseNote } = req.body;
@@ -87,7 +77,6 @@ const updateMentorshipStatus = asyncHandler(async (req, res) => {
     throw new apiError(404, "Mentorship request not found");
   }
 
-  // Only the assigned alumni or an admin can update
   if (request.alumni.toString() !== req.user._id.toString() && req.user.role !== "admin") {
     throw new apiError(403, "You do not have permission to update this mentorship request");
   }

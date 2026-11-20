@@ -6,6 +6,7 @@ import {
   registerUser as apiRegister,
   updateProfile as apiUpdateProfile,
 } from '../services/auth.service'
+import { disconnectSocket } from '../services/socket.service'
 
 const AuthContext = createContext(null)
 
@@ -14,7 +15,6 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token') || null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch logged in user details on initial load
   useEffect(() => {
     async function loadUser() {
       const storedToken = localStorage.getItem('token')
@@ -28,7 +28,6 @@ export function AuthProvider({ children }) {
         if (response?.data) {
           setUser(response.data)
         } else {
-          // Token is invalid/expired
           localStorage.removeItem('token')
           setUser(null)
           setToken(null)
@@ -68,6 +67,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.warn('Logout API error:', err)
     } finally {
+      disconnectSocket()
       localStorage.removeItem('token')
       setUser(null)
       setToken(null)

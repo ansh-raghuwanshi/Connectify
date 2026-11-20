@@ -8,7 +8,6 @@ import verifyJwt from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// All message routes are strictly protected
 router.use(verifyJwt);
 
 router.route("/").get(getConversationsList).post(sendMessage);

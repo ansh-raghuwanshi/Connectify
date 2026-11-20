@@ -3,10 +3,8 @@ import { User } from "../model/user.model.js";
 import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { getIO } from "../socket.js";
 
-/**
- * Send a direct message
- */
 const sendMessage = asyncHandler(async (req, res) => {
   const { recipientId, content } = req.body;
   const senderId = req.user._id;
@@ -38,14 +36,21 @@ const sendMessage = asyncHandler(async (req, res) => {
     .populate("sender", "name role profilePicture")
     .populate("recipient", "name role profilePicture");
 
+  try {
+    const io = getIO();
+    if (io) {
+      io.to(recipientId.toString()).emit("receive_message", populatedMessage);
+      io.to(senderId.toString()).emit("receive_message", populatedMessage);
+    }
+  } catch (socketErr) {
+    console.warn("[Socket.io] Real-time broadcast failed:", socketErr.message);
+  }
+
   return res
     .status(201)
     .json(new apiResponse(201, "Message sent successfully", populatedMessage));
 });
 
-/**
- * Get conversation history with a specific user
- */
 const getConversation = asyncHandler(async (req, res) => {
   const { userId } = req.params;
   const currentUserId = req.user._id;
@@ -73,7 +78,6 @@ const getConversation = asyncHandler(async (req, res) => {
       .lean(),
   ]);
 
-  // Automatically mark incoming unread messages as read
   await Message.updateMany(
     { sender: userId, recipient: currentUserId, isRead: false },
     { isRead: true, readAt: new Date() }
@@ -92,13 +96,9 @@ const getConversation = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Get list of active conversations / recent chats
- */
 const getConversationsList = asyncHandler(async (req, res) => {
   const currentUserId = req.user._id;
 
-  // Find latest message for each distinct conversation partner
   const messages = await Message.aggregate([
     {
       $match: {

@@ -12,11 +12,9 @@ import verifyJwt from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// Public/Optional auth for feed
 router.route("/").get(getPosts);
 router.route("/:id").get(getPostById);
 
-// Protected routes
 router.use(verifyJwt);
 
 router.route("/").post(createPost);

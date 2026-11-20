@@ -1,6 +1,3 @@
-/**
- * Email templates for Connectify platform
- */
 
 export const verificationEmailTemplate = ({ name, verificationUrl }) => ({
   subject: "Verify your Connectify account",

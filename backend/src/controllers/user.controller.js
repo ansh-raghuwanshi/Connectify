@@ -14,12 +14,9 @@ const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-/**
- * Core registration handler supporting all roles
- */
 const registerUser = asyncHandler(async (req, res) => {
   const {
     name,
@@ -37,7 +34,6 @@ const registerUser = asyncHandler(async (req, res) => {
     location,
   } = req.body;
 
-  // Basic required validations
   if (!name || !name.trim()) {
     throw new apiError(400, "Name is required");
   }
@@ -62,7 +58,6 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new apiError(400, `Invalid role. Allowed roles: ${validRoles.join(", ")}`);
   }
 
-  // Student and alumni require enrollment number and passout year
   if (userRole === "student" || userRole === "alumni") {
     if (!enrollmentNumber || !enrollmentNumber.trim()) {
       throw new apiError(400, "Enrollment number is required for students and alumni");
@@ -84,7 +79,6 @@ const registerUser = asyncHandler(async (req, res) => {
   let unhashedToken;
 
   if (existingUser) {
-    // If the existing user is ALREADY verified, reject registration as conflict
     if (existingUser.isEmailVerified) {
       throw new apiError(
         409,
@@ -92,9 +86,8 @@ const registerUser = asyncHandler(async (req, res) => {
       );
     }
 
-    // SAFE RECOVERY: If an UNVERIFIED account exists, update credentials and resend verification
     existingUser.name = name.trim();
-    existingUser.password = password; // Will be hashed by pre-save hook
+    existingUser.password = password;
     existingUser.role = userRole;
     if (enrollmentNumber) existingUser.enrollmentNumber = enrollmentNumber.trim();
     if (passoutYear) existingUser.passoutYear = passoutYear.toString().trim();
@@ -109,7 +102,6 @@ const registerUser = asyncHandler(async (req, res) => {
     unhashedToken = existingUser.generateEmailVerificationToken();
     user = await existingUser.save();
   } else {
-    // Create fresh user
     user = new User({
       name: name.trim(),
       email: normalizedEmail,
@@ -131,7 +123,6 @@ const registerUser = asyncHandler(async (req, res) => {
     await user.save();
   }
 
-  // Generate verification URL
   const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
   const verificationUrl = `${frontendUrl}/verify-email?token=${unhashedToken}`;
   const emailTemplate = verificationEmailTemplate({
@@ -139,12 +130,6 @@ const registerUser = asyncHandler(async (req, res) => {
     verificationUrl,
   });
 
-  console.log("\n========================================================");
-  console.log(`[Email Service] Verification Link for ${user.email}:`);
-  console.log(`🔗 ${verificationUrl}`);
-  console.log("========================================================\n");
-
-  // Attempt to send verification email
   let emailSent = false;
   let emailError = null;
   try {
@@ -172,12 +157,10 @@ const registerUser = asyncHandler(async (req, res) => {
         {
           user: createdUser,
           emailSent: true,
-          verificationUrl: process.env.NODE_ENV !== "production" ? verificationUrl : undefined,
         }
       )
     );
   } else {
-    // Precise state communication: account created, email sending pending/failed
     return res.status(201).json(
       new apiResponse(
         201,
@@ -192,7 +175,6 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 });
 
-// Role-specific wrappers preserving existing endpoints
 const registerStudent = asyncHandler(async (req, res) => {
   req.body.role = "student";
   return registerUser(req, res);
@@ -208,10 +190,6 @@ const registerTeacher = asyncHandler(async (req, res) => {
   return registerUser(req, res);
 });
 
-/**
- * Verify account using verification token
- * Accepts token via URL params, query string, or body
- */
 const verifyEmail = asyncHandler(async (req, res) => {
   const token = req.params?.token || req.query?.token || req.body?.token;
 
@@ -219,10 +197,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
     throw new apiError(400, "Verification token is required");
   }
 
-  // Hash incoming token using SHA-256 to compare with stored token
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-  // Query by hashed token or plain token (for backward compatibility)
   const user = await User.findOne({
     $or: [
       {
@@ -230,7 +206,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
         emailVerificationExpires: { $gt: Date.now() },
       },
       {
-        emailVerificationToken: token, // legacy unhashed support
+        emailVerificationToken: token,
       },
     ],
   }).select("+emailVerificationToken +emailVerificationExpires");
@@ -253,9 +229,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * Resend verification email
- */
 const resendVerificationEmail = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -268,7 +241,6 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
     "+emailVerificationToken +emailVerificationExpires"
   );
 
-  // Prevent email enumeration: return consistent response whether user exists or not
   if (!user || user.isEmailVerified) {
     return res.status(200).json(
       new apiResponse(
@@ -287,11 +259,6 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
     name: user.name,
     verificationUrl,
   });
-
-  console.log("\n========================================================");
-  console.log(`[Resend Verification] Link for ${user.email}:`);
-  console.log(`🔗 ${verificationUrl}`);
-  console.log("========================================================\n");
 
   let emailSent = false;
   try {
@@ -312,15 +279,11 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
       "If an unverified account exists with this email address, a verification link has been sent (check Spam/Junk if not in inbox).",
       {
         emailSent,
-        verificationUrl: process.env.NODE_ENV !== "production" ? verificationUrl : undefined,
       }
     )
   );
 });
 
-/**
- * User login
- */
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -374,9 +337,6 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-/**
- * User profile retrieval (current user)
- */
 const me = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -refreshToken -emailVerificationToken -emailVerificationExpires"
@@ -389,13 +349,11 @@ const me = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, "User details retrieved successfully", user));
 });
 
-/**
- * Profile update
- */
 const updateProfile = asyncHandler(async (req, res) => {
   const {
     name,
     profilePicture,
+    coverPicture,
     bio,
     department,
     branch,
@@ -417,6 +375,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   if (name && name.trim()) user.name = name.trim();
   if (profilePicture !== undefined) user.profilePicture = profilePicture;
+  if (coverPicture !== undefined) user.coverPicture = coverPicture;
   if (bio !== undefined) user.bio = bio;
   if (department !== undefined) user.department = department;
   if (branch !== undefined) user.branch = branch;
@@ -439,9 +398,6 @@ const updateProfile = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, "Profile updated successfully", updatedUser));
 });
 
-/**
- * User logout
- */
 const logout = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, { refreshToken: null });
 
@@ -452,9 +408,6 @@ const logout = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, "Logout successful", null));
 });
 
-/**
- * Refresh access token
- */
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies?.refreshToken || req.headers?.authorization?.replace("Bearer ", "");
@@ -495,9 +448,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
-/**
- * Forgot password handler
- */
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email || !email.trim()) {
@@ -537,9 +487,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * Reset password handler
- */
 const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -561,13 +508,65 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new apiError(400, "Password reset token is invalid or has expired");
   }
 
-  user.password = newPassword; // hashed in pre-save hook
+  user.password = newPassword;
   user.resetPasswordToken = null;
   user.resetPasswordExpires = null;
-  user.refreshToken = null; // Invalidate existing sessions
+  user.refreshToken = null;
   await user.save();
 
   return res.status(200).json(new apiResponse(200, "Password has been reset successfully. Please log in with your new password."));
+});
+
+const uploadImage = asyncHandler(async (req, res) => {
+  const { file, type = "profile" } = req.body;
+  if (!file) {
+    throw new apiError(400, "Image file data is required");
+  }
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || "dcotrqj9b";
+  const apiKey = process.env.CLOUDINARY_API_KEY || "964236131985279";
+  const apiSecret = process.env.CLOUDINARY_API_SECRET || "-xekcS6CQHMyQUixRQeAJFgSGwE";
+  const folder = process.env.CLOUDINARY_FOLDER || "PrintIt";
+
+  const timestamp = Math.round(Date.now() / 1000);
+  const paramsToSign = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+  const signature = crypto.createHash("sha1").update(paramsToSign).digest("hex");
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", apiKey);
+  formData.append("timestamp", timestamp.toString());
+  formData.append("folder", folder);
+  formData.append("signature", signature);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await response.json();
+  if (!response.ok || !data.secure_url) {
+    throw new apiError(response.status || 500, data.error?.message || "Cloudinary upload failed");
+  }
+
+  if (req.user?._id) {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      if (type === "cover") {
+        user.coverPicture = data.secure_url;
+      } else {
+        user.profilePicture = data.secure_url;
+      }
+      await user.save();
+    }
+  }
+
+  return res.status(200).json(
+    new apiResponse(200, "Image uploaded successfully to Cloudinary", {
+      url: data.secure_url,
+      publicId: data.public_id,
+    })
+  );
 });
 
 export {
@@ -575,7 +574,7 @@ export {
   registerStudent,
   registerAlumni,
   registerTeacher,
-  registerTeacher as regiseterTeacher, // typo compatibility
+  registerTeacher as regiseterTeacher,
   verifyEmail,
   resendVerificationEmail,
   loginUser,
@@ -585,4 +584,5 @@ export {
   refreshAccessToken,
   forgotPassword,
   resetPassword,
+  uploadImage,
 };

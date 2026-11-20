@@ -182,24 +182,23 @@ async function seedDatabase() {
       }
     }
 
-    // Seed sample community posts
     if (createdUsers.length >= 2) {
       const existingPosts = await Post.countDocuments();
       if (existingPosts === 0) {
         console.log("[Seed] Seeding sample community feed posts...");
         await Post.create([
           {
-            author: createdUsers[0]._id, // Rahul Sharma (Microsoft)
+            author: createdUsers[0]._id,
             content: "Excited to share that our team at Microsoft is hiring fresh graduates for SDE-1 roles in Azure Core! Feel free to reach out with your resume or connect with me here on Connectify.",
             tags: ["hiring", "microsoft", "sde", "jobs"],
           },
           {
-            author: createdUsers[1]._id, // Priya Patel (Google)
+            author: createdUsers[1]._id,
             content: "Had a great mock interview session with college juniors last weekend. Strong problem-solving skills! A quick tip for everyone preparing for campus drives: always write down edge cases before coding.",
             tags: ["interviews", "dsa", "tips", "google"],
           },
           {
-            author: createdUsers[2]._id, // Aman Verma (Amazon)
+            author: createdUsers[2]._id,
             content: "Just open-sourced a full-stack starter kit using React and Node.js. Great resource for students building their final-year major projects. Check it out and let me know your thoughts!",
             tags: ["react", "webdev", "projects"],
           },
@@ -208,7 +207,6 @@ async function seedDatabase() {
       }
     }
 
-    // Seed sample campus events
     if (createdUsers.length >= 2) {
       const existingEvents = await Event.countDocuments();
       if (existingEvents === 0) {

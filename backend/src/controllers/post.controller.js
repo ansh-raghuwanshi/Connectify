@@ -3,9 +3,6 @@ import apiError from "../utils/apiError.js";
 import apiResponse from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
-/**
- * Create a new post
- */
 const createPost = asyncHandler(async (req, res) => {
   const { content, mediaUrl, tags } = req.body;
 
@@ -30,9 +27,6 @@ const createPost = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, "Post published successfully", populatedPost));
 });
 
-/**
- * Get posts feed with pagination
- */
 const getPosts = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, authorId, tag } = req.query;
 
@@ -55,7 +49,6 @@ const getPosts = asyncHandler(async (req, res) => {
       .lean(),
   ]);
 
-  // Append user-specific flags (e.g. isLikedByMe)
   const formattedPosts = posts.map((post) => ({
     ...post,
     likesCount: post.likes ? post.likes.length : 0,
@@ -78,9 +71,6 @@ const getPosts = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * Get post by ID
- */
 const getPostById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -102,9 +92,6 @@ const getPostById = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, "Post retrieved successfully", postObj));
 });
 
-/**
- * Toggle like on a post
- */
 const toggleLikePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user._id;
@@ -136,9 +123,6 @@ const toggleLikePost = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * Add comment to post
- */
 const addComment = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { text } = req.body;
@@ -171,9 +155,6 @@ const addComment = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, "Comment added successfully", newComment));
 });
 
-/**
- * Delete comment
- */
 const deleteComment = asyncHandler(async (req, res) => {
   const { postId, commentId } = req.params;
 
@@ -187,7 +168,6 @@ const deleteComment = asyncHandler(async (req, res) => {
     throw new apiError(404, "Comment not found");
   }
 
-  // Check authorization: comment author, post author, or admin
   const isAuthor = comment.author.toString() === req.user._id.toString();
   const isPostAuthor = post.author.toString() === req.user._id.toString();
   const isAdmin = req.user.role === "admin";
@@ -202,9 +182,6 @@ const deleteComment = asyncHandler(async (req, res) => {
   return res.status(200).json(new apiResponse(200, "Comment deleted successfully", null));
 });
 
-/**
- * Delete post
- */
 const deletePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -213,7 +190,6 @@ const deletePost = asyncHandler(async (req, res) => {
     throw new apiError(404, "Post not found");
   }
 
-  // Check authorization: author or admin
   const isAuthor = post.author.toString() === req.user._id.toString();
   const isAdmin = req.user.role === "admin";
 
